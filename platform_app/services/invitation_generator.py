@@ -1,12 +1,6 @@
 import os
 from typing import Dict
 
-import qrcode
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A5
-from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
-
 from .. import db
 from ..models import Guest, Invitation
 
@@ -19,91 +13,83 @@ def _safe(value) -> str:
     return "" if value is None else str(value).strip()
 
 
-def _make_qr_png(save_path: str, data: str) -> None:
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=8,
-        border=2,
+def _write_minimal_pdf(path: str, title: str, guest_name: str, invite_url: str) -> None:
+    """
+    PDF minimal sans ReportLab, sans Pillow, sans image.
+    Objectif : fonctionner sur Render sans 502.
+    """
+
+    content = f"""BT
+/F1 22 Tf
+70 760 Td
+(INVITATION) Tj
+0 -40 Td
+/F1 14 Tf
+({title}) Tj
+0 -30 Td
+({guest_name}) Tj
+0 -40 Td
+(Confirmez votre presence ici :) Tj
+0 -25 Td
+({invite_url}) Tj
+ET
+"""
+
+    content_bytes = content.encode("latin-1", errors="replace")
+
+    objects = []
+
+    objects.append(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+    objects.append(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n")
+    objects.append(
+        b"3 0 obj\n"
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+        b"/Resources << /Font << /F1 4 0 R >> >> "
+        b"/Contents 5 0 R >>\n"
+        b"endobj\n"
     )
-    qr.add_data(data)
-    qr.make(fit=True)
-
-    img = qr.make_image(fill_color="black", back_color="white")
-    img.save(save_path)
-
-
-def _guest_label(guest: Guest) -> str:
-    civility = _safe(getattr(guest, "civility", "")) or "MME"
-    name = _safe(getattr(guest, "full_name", ""))
-    return f"{civility} {name}".strip()
-
-
-def _table_label(guest: Guest) -> str:
-    table = _safe(getattr(guest, "table_name", ""))
-    return f"Table : {table}" if table else ""
-
-
-def _render_light_pdf(
-    *,
-    guest: Guest,
-    event,
-    invitation_code: str,
-    base_public_url: str,
-    pdf_path: str,
-    qr_path: str,
-) -> None:
-    base = (base_public_url or "").rstrip("/")
-    invite_url = f"{base}/i/{invitation_code}" if base else f"/i/{invitation_code}"
-
-    _ensure_dir(os.path.dirname(pdf_path))
-    _ensure_dir(os.path.dirname(qr_path))
-
-    _make_qr_png(qr_path, invite_url)
-
-    page_w, page_h = A5
-    c = canvas.Canvas(pdf_path, pagesize=A5)
-
-    # Page 1
-    c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(page_w / 2, page_h - 45 * mm, "INVITATION")
-
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(page_w / 2, page_h - 65 * mm, _safe(event.title))
-
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(
-        page_w / 2,
-        page_h - 78 * mm,
-        event.event_datetime.strftime("%d/%m/%Y à %H:%M"),
+    objects.append(b"4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n")
+    objects.append(
+        b"5 0 obj\n"
+        + f"<< /Length {len(content_bytes)} >>\n".encode("ascii")
+        + b"stream\n"
+        + content_bytes
+        + b"\nendstream\nendobj\n"
     )
 
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(page_w / 2, page_h - 100 * mm, "Cher invité,")
+    pdf = bytearray()
+    pdf.extend(b"%PDF-1.4\n")
 
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(page_w / 2, page_h - 112 * mm, _guest_label(guest))
+    offsets = [0]
 
-    table = _table_label(guest)
-    if table:
-        c.setFont("Helvetica", 12)
-        c.drawCentredString(page_w / 2, page_h - 125 * mm, table)
+    for obj in objects:
+        offsets.append(len(pdf))
+        pdf.extend(obj)
 
-    c.setFont("Helvetica", 11)
-    c.drawCentredString(page_w / 2, 58 * mm, "Scannez ce QR code pour confirmer votre présence")
+    xref_position = len(pdf)
 
-    if os.path.exists(qr_path):
-        c.drawImage(
-            ImageReader(qr_path),
-            (page_w - 35 * mm) / 2,
-            20 * mm,
-            width=35 * mm,
-            height=35 * mm,
-            mask="auto",
-        )
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    pdf.extend(b"0000000000 65535 f \n")
 
-    c.showPage()
-    c.save()
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+
+    pdf.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref_position}\n%%EOF\n".encode("ascii")
+    )
+
+    with open(path, "wb") as file:
+        file.write(pdf)
+
+
+def _write_qr_placeholder(path: str, invite_url: str) -> None:
+    """
+    Fichier placeholder temporaire.
+    On remettra le vrai QR après stabilisation Render.
+    """
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(invite_url)
 
 
 def generate_all_invitations_for_event(
@@ -123,33 +109,43 @@ def generate_all_invitations_for_event(
     files_generated = 0
 
     for guest in guests:
-        inv = Invitation.query.filter_by(
+        invitation = Invitation.query.filter_by(
             event_id=event.id,
             guest_id=guest.id,
         ).first()
 
-        if inv is None:
-            inv = Invitation(event_id=event.id, guest_id=guest.id)
+        if invitation is None:
+            invitation = Invitation(
+                event_id=event.id,
+                guest_id=guest.id,
+            )
 
-        if not inv.invitation_code:
-            inv.invitation_code = os.urandom(16).hex()
+        if not invitation.invitation_code:
+            invitation.invitation_code = os.urandom(16).hex()
+
+        invite_url = f"{base_public_url.rstrip()}/i/{invitation.invitation_code}"
 
         pdf_path = os.path.join(pdf_dir, f"invite_{guest.id}.pdf")
-        qr_path = os.path.join(qr_dir, f"invite_{guest.id}.png")
+        qr_path = os.path.join(qr_dir, f"invite_{guest.id}.txt")
 
-        _render_light_pdf(
-            guest=guest,
-            event=event,
-            invitation_code=inv.invitation_code,
-            base_public_url=base_public_url,
-            pdf_path=pdf_path,
-            qr_path=qr_path,
+        guest_name = f"{_safe(getattr(guest, 'civility', ''))} {_safe(guest.full_name)}".strip()
+
+        _write_minimal_pdf(
+            path=pdf_path,
+            title=_safe(event.title),
+            guest_name=guest_name,
+            invite_url=invite_url,
         )
 
-        inv.pdf_path = pdf_path
-        inv.qr_path = qr_path
+        _write_qr_placeholder(
+            path=qr_path,
+            invite_url=invite_url,
+        )
 
-        db.session.add(inv)
+        invitation.pdf_path = pdf_path
+        invitation.qr_path = qr_path
+
+        db.session.add(invitation)
         files_generated += 1
 
     db.session.commit()
