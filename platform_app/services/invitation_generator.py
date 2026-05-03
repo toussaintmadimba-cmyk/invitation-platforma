@@ -28,7 +28,11 @@ def generate_all_invitations_for_event(
 
     files_generated = 0
 
+    guests = guests[:1]  # ⚠️ limite à 1 invité pour éviter crash Render
+
     for guest in guests:
+
+
         invitation = Invitation.query.filter_by(
             event_id=event.id,
             guest_id=guest.id,
