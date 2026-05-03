@@ -1,0 +1,48 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-5 text-center">
+
+        <div class="display-5 mb-3">Merci</div>
+
+        <h4>{{ guest.civility }} {{ guest.full_name }}</h4>
+
+        {% if rsvp and rsvp.status == "yes" %}
+          <div class="alert alert-success mt-4">
+            Votre présence a été confirmée.
+          </div>
+        {% elif rsvp and rsvp.status == "no" %}
+          <div class="alert alert-warning mt-4">
+            Votre absence a été enregistrée.
+          </div>
+        {% else %}
+          <div class="alert alert-secondary mt-4">
+            Aucune réponse enregistrée.
+          </div>
+        {% endif %}
+
+        {% if rsvp and rsvp.message %}
+          <div class="mt-4 text-start">
+            <strong>Votre message :</strong>
+            <div class="border rounded p-3 mt-2 bg-light">
+              {{ rsvp.message }}
+            </div>
+          </div>
+        {% endif %}
+
+        <a class="btn btn-outline-dark mt-4"
+           href="{{ url_for('public.invitation_page', code=inv.invitation_code) }}">
+          Modifier ma réponse
+        </a>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

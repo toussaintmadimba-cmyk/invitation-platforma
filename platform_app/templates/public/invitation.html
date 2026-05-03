@@ -1,0 +1,86 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4 p-md-5 text-center">
+
+        <div class="mb-4">
+          <div class="text-muted small text-uppercase">Invitation</div>
+          <h1 class="mt-2">{{ event.title }}</h1>
+          <p class="text-muted mb-0">
+            {{ event.event_datetime.strftime('%d/%m/%Y à %H:%M') }}
+          </p>
+        </div>
+
+        <hr>
+
+        <div class="my-4">
+          <p class="text-muted mb-1">Cher invité</p>
+          <h3>{{ guest.civility }} {{ guest.full_name }}</h3>
+
+          {% if guest.table_name %}
+            <p class="mt-2">
+              <span class="badge text-bg-dark">Table : {{ guest.table_name }}</span>
+            </p>
+          {% endif %}
+        </div>
+
+        {% if event.show_location %}
+          <div class="mb-4">
+            <h5>Lieu</h5>
+            <p class="mb-0">{{ event.location_name }}</p>
+            <p class="text-muted">{{ event.address }}</p>
+          </div>
+        {% endif %}
+
+        {% if event.show_instructions and event.instructions %}
+          <div class="alert alert-light border text-start">
+            <strong>Informations :</strong><br>
+            {{ event.instructions }}
+          </div>
+        {% endif %}
+
+        <hr>
+
+        <h5 class="mb-3">Votre réponse</h5>
+
+        {% if status != "pending" %}
+          <div class="alert alert-info">
+            Réponse actuelle :
+            {% if status == "yes" %}
+              <strong>Je serai présent</strong>
+            {% elif status == "no" %}
+              <strong>Je ne serai pas présent</strong>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('public.invitation_rsvp', code=inv.invitation_code) }}">
+
+          <div class="mb-3 text-start">
+            <label class="form-label">Message optionnel</label>
+            <textarea class="form-control" name="message" rows="3">{{ message or "" }}</textarea>
+          </div>
+
+          <div class="d-grid gap-2 d-md-flex justify-content-center">
+            <button type="submit" class="btn btn-success px-4" name="status" value="yes">
+              Je serai présent
+            </button>
+
+            <button type="submit" class="btn btn-outline-danger px-4" name="status" value="no">
+              Je ne serai pas présent
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

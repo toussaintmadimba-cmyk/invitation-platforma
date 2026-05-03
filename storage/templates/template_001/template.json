@@ -1,0 +1,73 @@
+{
+  "id": "template_001",
+  "name": "Wedding Premium 4 pages",
+  "page_size": "A5",
+  "pages": [
+    {
+      "background": "page_1.png",
+      "elements": []
+    },
+    {
+      "background": "page_2.png",
+      "elements": [
+        {
+          "type": "text",
+          "key": "guest_label",
+          "x_mm": 20,
+          "y_mm": 130,
+          "size": 16,
+          "align": "left"
+        },
+        {
+          "type": "text",
+          "key": "table_label",
+          "x_mm": 20,
+          "y_mm": 118,
+          "size": 11,
+          "align": "left"
+        },
+        {
+          "type": "qr",
+          "key": "qr",
+          "x_mm": 110,
+          "y_mm": 20,
+          "w_mm": 25,
+          "h_mm": 25
+        }
+      ]
+    },
+    {
+      "background": "page_3.png",
+      "elements": []
+    },
+    {
+      "background": "page_4.png",
+      "elements": [
+        {
+          "type": "rsvp_link",
+          "action": "yes",
+          "x_mm": 25,
+          "y_mm": 95,
+          "w_mm": 100,
+          "h_mm": 12
+        },
+        {
+          "type": "rsvp_link",
+          "action": "no",
+          "x_mm": 25,
+          "y_mm": 80,
+          "w_mm": 110,
+          "h_mm": 12
+        },
+        {
+          "type": "rsvp_link",
+          "action": "later",
+          "x_mm": 25,
+          "y_mm": 65,
+          "w_mm": 100,
+          "h_mm": 12
+        }
+      ]
+    }
+  ]
+}

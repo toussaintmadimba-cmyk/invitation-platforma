@@ -1,0 +1,73 @@
+/* Variables de thème */
+:root {
+    --gold: #D4AF37;
+    --soft-white: #FAF9F6;
+    --dark-navy: #2C3E50;
+    --glass-white: rgba(255, 255, 255, 0.9);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--soft-white);
+    color: var(--dark-navy);
+}
+
+/* Typographie Luxe */
+h1, h2, h3, .navbar-brand {
+    font-family: 'Playfair Display', serif;
+}
+
+/* Navbar Style */
+.navbar {
+    background: var(--glass-white) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.navbar-brand {
+    color: var(--gold) !important;
+    font-weight: 700;
+    font-size: 1.6rem;
+}
+
+/* Cartes du Dashboard */
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+}
+
+/* Boutons personnalisés */
+.btn-gold {
+    background-color: var(--gold);
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+.btn-gold:hover {
+    background-color: #b8962d;
+    color: white;
+}
+
+.btn-outline-gold {
+    border: 1px solid var(--gold);
+    color: var(--gold);
+}
+
+.btn-outline-gold:hover {
+    background-color: var(--gold);
+    color: white;
+}
+
+/* Tableaux */
+.table thead {
+    background-color: #f8f9fa;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}

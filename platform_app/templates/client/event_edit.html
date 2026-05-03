@@ -1,0 +1,72 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <h3 class="mb-0">Modifier l’événement</h3>
+    <div class="text-muted">{{ event.title }}</div>
+  </div>
+  <a class="btn btn-outline-dark" href="{{ url_for('client.events_list') }}">Retour</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" action="{{ url_for('client.events_edit_post', event_id=event.id) }}">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nom de l’événement</label>
+          <input class="form-control" name="title" value="{{ event.title }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Date & heure</label>
+          <input class="form-control" type="datetime-local" name="event_datetime"
+                 value="{{ event.event_datetime.strftime('%Y-%m-%dT%H:%M') }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Lieu</label>
+          <input class="form-control" name="location_name" value="{{ event.location_name }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Adresse</label>
+          <input class="form-control" name="address" value="{{ event.address }}" required>
+        </div>
+      </div>
+
+      <hr class="my-3">
+
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="show_location" {% if event.show_location %}checked{% endif %}>
+            <label class="form-check-label">Afficher la section Lieu</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="show_program" {% if event.show_program %}checked{% endif %}>
+            <label class="form-check-label">Afficher Programme (plus tard)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="show_contacts" {% if event.show_contacts %}checked{% endif %}>
+            <label class="form-check-label">Afficher Contacts (plus tard)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="show_instructions" {% if event.show_instructions %}checked{% endif %}>
+            <label class="form-check-label">Afficher Consignes</label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Consignes / infos (optionnel)</label>
+          <textarea class="form-control" name="instructions" rows="5">{{ event.instructions or "" }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="is_active" {% if event.is_active %}checked{% endif %}>
+        <label class="form-check-label">Événement actif (désactiver au lieu de supprimer)</label>
+      </div>
+
+      <button class="btn btn-dark mt-3">Enregistrer</button>
+      <a class="btn btn-outline-dark mt-3" href="{{ url_for('client.guests_list', event_id=event.id) }}">Gérer invités</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

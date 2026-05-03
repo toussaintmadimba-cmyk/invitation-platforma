@@ -1,0 +1,84 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+<div class="d-flex align-items-end justify-content-between mb-5">
+  <div>
+    <h2 class="display-6 fw-bold mb-0" style="font-family: 'Playfair Display';">Dashboard</h2>
+    <div class="text-muted">Ravi de vous revoir, {{ current_user.name }}</div>
+  </div>
+  <a class="btn btn-gold shadow-sm" href="{{ url_for('client.events_list') }}">
+    <i class="bi bi-plus-lg"></i> Gérer mes événements
+  </a>
+</div>
+
+<!-- Statistiques -->
+<div class="row g-4 mb-5">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <h6 class="text-uppercase text-muted small fw-bold mb-3">Total événements</h6>
+        <div class="h2 mb-0 fw-bold">{{ total_events }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid var(--gold) !important;">
+      <div class="card-body p-4">
+        <h6 class="text-uppercase text-muted small fw-bold mb-3">Événements actifs</h6>
+        <div class="h2 mb-0 fw-bold text-success">{{ active_events }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-4">
+        <h6 class="text-uppercase text-muted small fw-bold mb-3">Invités confirmés</h6>
+        <div class="h2 mb-0 fw-bold">{{ total_guests }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Liste des événements -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white py-3 border-0">
+    <h5 class="mb-0 fw-bold">Dernières célébrations</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="bg-light">
+        <tr>
+          <th class="ps-4">Nom de l'événement</th>
+          <th>Date</th>
+          <th>Statut</th>
+          <th class="text-end pe-4">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in events %}
+        <tr class="border-transparent">
+          <td class="ps-4 fw-semibold">{{ e.title }}</td>
+          <td>{{ e.event_datetime.strftime('%d %b %Y') }}</td>
+          <td>
+            {% if e.is_active %}
+              <span class="badge rounded-pill bg-success-subtle text-success px-3">Actif</span>
+            {% else %}
+              <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3">Clôturé</span>
+            {% endif %}
+          </td>
+          <td class="text-end pe-4">
+            <a class="btn btn-sm btn-link text-gold fw-bold text-decoration-none me-2" href="{{ url_for('client.guests_list', event_id=e.id) }}">Invités</a>
+            <a class="btn btn-sm btn-outline-dark px-3" href="{{ url_for('client.events_edit_get', event_id=e.id) }}">Modifier</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-center py-5 text-muted italic">
+            Aucun événement créé pour le moment. Commencez l'aventure !
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

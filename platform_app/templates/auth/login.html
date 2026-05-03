@@ -1,0 +1,38 @@
+{% extends "partials/_base.html" %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 520px;">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h3 class="mb-3">Connexion</h3>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ category }} py-2">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" action="{{ url_for('auth.login_post') }}">
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input class="form-control" name="email" type="email" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Mot de passe</label>
+          <input class="form-control" name="password" type="password" required>
+        </div>
+
+        <button class="btn btn-primary w-100" type="submit">Se connecter</button>
+      </form>
+
+      <div class="text-muted mt-3">
+        Pas de compte ?
+        <a href="{{ url_for('auth.register_get') }}">Créer un compte</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

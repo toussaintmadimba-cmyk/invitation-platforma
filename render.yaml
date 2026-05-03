@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: invitation-platforma
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: BASE_PUBLIC_URL
+        value: https://invitation-platforma.onrender.com
+      - key: DATABASE_URL
+        value: sqlite:///app.db
+      - key: FLASK_ENV
+        value: production

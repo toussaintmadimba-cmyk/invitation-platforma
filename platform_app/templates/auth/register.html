@@ -1,0 +1,30 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="mb-3">Créer un compte</h4>
+        <form method="post" action="{{ url_for('auth.register_post') }}">
+          <div class="mb-3">
+            <label class="form-label">Nom</label>
+            <input class="form-control" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" name="email" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mot de passe</label>
+            <input class="form-control" type="password" name="password" required>
+          </div>
+          <button class="btn btn-success w-100">Créer</button>
+        </form>
+        <div class="mt-3 text-muted">
+          Déjà un compte ? <a href="{{ url_for('auth.login_get') }}">Se connecter</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

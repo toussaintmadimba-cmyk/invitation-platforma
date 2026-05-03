@@ -1,0 +1,183 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <h3 class="mb-0">Invités</h3>
+    <div class="text-muted">{{ event.title }}</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-dark" href="{{ url_for('client.events_edit_get', event_id=event.id) }}">Événement</a>
+    <a class="btn btn-outline-dark" href="{{ url_for('client.events_list') }}">Retour</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Confirmés</div>
+        <div class="h3 text-success mb-0">{{ rsvp_stats.yes }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Refus</div>
+        <div class="h3 text-danger mb-0">{{ rsvp_stats.no }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">En attente</div>
+        <div class="h3 text-secondary mb-0">{{ rsvp_stats.pending }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">Ajouter un invité</h5>
+
+        <form method="post" action="{{ url_for('client.guests_create', event_id=event.id) }}">
+
+          <div class="mb-3">
+            <label class="form-label">Civilité</label>
+            <select class="form-select" name="civility" required>
+              <option value="MR">MR</option>
+              <option value="MME" selected>MME</option>
+              <option value="MLLE">MLLE</option>
+              <option value="COUPLE">COUPLE</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Nom complet</label>
+            <input class="form-control" name="full_name" required>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Type</label>
+              <select class="form-select" name="guest_type" required>
+                <option value="single">Single</option>
+                <option value="couple">Couple</option>
+                <option value="family">Famille</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Taille du groupe</label>
+              <input class="form-control" name="party_size" placeholder="Auto si single">
+            </div>
+          </div>
+
+          <div class="row g-2 mt-1">
+            <div class="col-md-6">
+              <label class="form-label">Table</label>
+              <input class="form-control" name="table_name">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Téléphone</label>
+              <input class="form-control" name="phone">
+            </div>
+          </div>
+
+          <div class="mt-2">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" name="email">
+          </div>
+
+          <div class="mt-2">
+            <label class="form-label">Notes internes</label>
+            <textarea class="form-control" name="notes" rows="3"></textarea>
+          </div>
+
+          <button class="btn btn-dark w-100 mt-3">Ajouter</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-3">
+      <div class="card-body">
+        <h5 class="mb-2">Invitations</h5>
+
+        <div class="text-muted mb-3">
+          Déjà générées : <strong>{{ invitations_count }}</strong>
+        </div>
+
+        <form method="post" action="{{ url_for('client.invitations_generate_ui', event_id=event.id) }}"
+              onsubmit="return confirm('Générer / mettre à jour les QR + PDF pour tous les invités ?');">
+          <button class="btn btn-success w-100">
+            Générer / mettre à jour
+          </button>
+        </form>
+
+        <a class="btn btn-outline-dark w-100 mt-2"
+           href="{{ url_for('client.invitations_list', event_id=event.id) }}">
+          Voir & télécharger
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="mb-3">Liste des invités ({{ guests|length }})</h5>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Nom</th>
+                <th>Civilité</th>
+                <th>Type</th>
+                <th>Groupe</th>
+                <th>Table</th>
+                <th class="text-end">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for g in guests %}
+                <tr>
+                  <td>{{ g.full_name }}</td>
+                  <td>{{ g.civility or "-" }}</td>
+                  <td><span class="badge text-bg-dark">{{ g.guest_type }}</span></td>
+                  <td>{{ g.party_size }}</td>
+                  <td>{{ g.table_name or "-" }}</td>
+                  <td class="text-end">
+                    <form method="post"
+                          action="{{ url_for('client.guests_delete', guest_id=g.id) }}"
+                          onsubmit="return confirm('Supprimer cet invité et son invitation ?');">
+                      <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+                    </form>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="6" class="text-muted">Aucun invité.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
