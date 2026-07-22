@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, send_file, jsonify
 from flask_login import login_required, current_user
 
 from .. import db
@@ -310,31 +310,42 @@ def guests_delete(guest_id: int):
 
 # ---------------- INVITATIONS ----------------
 
-@bp.post("/events/<int:event_id>/invitations/generate-ui")
+@bp.post("/events/<int:event_id>/invitations/generate-batch")
 @login_required
-def invitations_generate_ui(event_id: int):
+def invitations_generate_batch(event_id: int):
     _require_client()
 
     event = _get_client_event_or_404(event_id)
+    payload = request.get_json(silent=True) or {}
 
-    guests_count = Guest.query.filter_by(event_id=event.id).count()
-    if guests_count == 0:
-        flash("Aucun invité. Ajoute des invités avant de générer.", "warning")
-        return redirect(url_for("client.guests_list", event_id=event.id))
+    try:
+        offset = int(payload.get("offset", request.args.get("offset", 0)))
+    except (TypeError, ValueError):
+        offset = 0
+
+    try:
+        limit = int(payload.get("limit", request.args.get("limit", 20)))
+    except (TypeError, ValueError):
+        limit = 20
+
+    force_value = payload.get("force", request.args.get("force", "false"))
+    force = str(force_value).lower() in {"1", "true", "yes", "on"}
 
     summary = generate_all_invitations_for_event(
         event=event,
         storage_dir=current_app.config["STORAGE_DIR"],
         base_public_url=current_app.config["BASE_PUBLIC_URL"],
+        offset=offset,
+        limit=limit,
+        force=force,
     )
 
-    flash(
-        f"Invitations générées ✅ ({summary['files_generated']} fichier(s), "
-        f"{summary.get('errors', 0)} erreur(s))",
-        "success",
+    return jsonify(
+        files_generated=summary["files_generated"],
+        errors=summary.get("errors", 0),
+        total_guests=summary["total_guests"],
+        next_offset=summary["next_offset"],
     )
-    return redirect(url_for("client.invitations_list", event_id=event.id))
-
 
 @bp.get("/events/<int:event_id>/invitations")
 @login_required
