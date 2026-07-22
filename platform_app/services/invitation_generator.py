@@ -1,5 +1,5 @@
 import os
-from typing import Dict
+from typing import Any, Dict, Optional
 
 from flask import current_app
 
@@ -21,8 +21,19 @@ def generate_all_invitations_for_event(
     event,
     storage_dir: str,
     base_public_url: str,
-) -> Dict[str, int]:
-    guests = Guest.query.filter_by(event_id=event.id).all()
+    offset: int = 0,
+    limit: int = 20,
+    force: bool = False,
+) -> Dict[str, Any]:
+    offset = max(offset, 0)
+    limit = max(limit, 1)
+
+    guests_query = Guest.query.filter_by(event_id=event.id).order_by(Guest.id.asc())
+    total_guests = guests_query.count()
+    guests = guests_query.offset(offset).limit(limit).all()
+    next_offset: Optional[int] = offset + limit
+    if next_offset >= total_guests:
+        next_offset = None
 
     pdf_dir = os.path.join(storage_dir, "pdf", f"event_{event.id}")
     qr_dir = os.path.join(storage_dir, "qr", f"event_{event.id}")
@@ -45,6 +56,13 @@ def generate_all_invitations_for_event(
                 event_id=event.id,
                 guest_id=guest.id,
             )
+
+        if (
+            not force
+            and invitation.pdf_path
+            and invitation.qr_path
+        ):
+            continue
 
         if not invitation.invitation_code:
             invitation.invitation_code = os.urandom(16).hex()
@@ -89,4 +107,9 @@ def generate_all_invitations_for_event(
 
     db.session.commit()
 
-    return {"files_generated": files_generated, "errors": errors}
+    return {
+        "files_generated": files_generated,
+        "errors": errors,
+        "total_guests": total_guests,
+        "next_offset": next_offset,
+    }
