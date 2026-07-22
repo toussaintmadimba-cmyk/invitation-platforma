@@ -116,12 +116,25 @@
           Déjà générées : <strong>{{ invitations_count }}</strong>
         </div>
 
-        <form method="post" action="{{ url_for('client.invitations_generate_ui', event_id=event.id) }}"
-              onsubmit="return confirm('Générer / mettre à jour les QR + PDF pour tous les invités ?');">
-          <button class="btn btn-success w-100">
-            Générer / mettre à jour
-          </button>
-        </form>
+        <button
+  id="generateInvitationsButton"
+  class="btn btn-success w-100"
+  type="button"
+  data-generate-url="{{ url_for('client.invitations_generate_batch', event_id=event.id) }}"
+>
+  Générer / mettre à jour
+</button>
+
+<div id="generationProgress" class="alert alert-info d-none mt-2" role="status">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>Génération en cours...</strong>
+    <span id="generationProgressText">0 / 0 généré(s)</span>
+  </div>
+  <div class="progress" role="progressbar" aria-label="Progression de la génération">
+    <div id="generationProgressBar" class="progress-bar" style="width: 0%"></div>
+  </div>
+  <div id="generationSummary" class="small mt-2">0 fichier(s), 0 erreur(s)</div>
+</div>
 
         <a class="btn btn-outline-dark w-100 mt-2"
            href="{{ url_for('client.invitations_list', event_id=event.id) }}">
