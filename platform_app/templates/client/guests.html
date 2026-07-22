@@ -192,5 +192,70 @@
     </div>
   </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const button = document.getElementById("generateInvitationsButton");
+  const progressBox = document.getElementById("generationProgress");
+  const progressText = document.getElementById("generationProgressText");
+  const progressBar = document.getElementById("generationProgressBar");
+  const summaryText = document.getElementById("generationSummary");
+  const batchSize = 20;
 
+  if (!button) { return; }
+
+  const updateProgress = (processed, total, filesGenerated, errors) => {
+    const safeTotal = total || 0;
+    const safeProcessed = Math.min(processed, safeTotal);
+    const percent = safeTotal ? Math.round((safeProcessed / safeTotal) * 100) : 0;
+    progressText.textContent = `${safeProcessed} / ${safeTotal} généré(s)`;
+    progressBar.style.width = `${percent}%`;
+    progressBar.textContent = `${percent}%`;
+    summaryText.textContent = `${filesGenerated} fichier(s), ${errors} erreur(s)`;
+  };
+
+  button.addEventListener("click", async () => {
+    if (!confirm("Générer les PDF + QR manquants pour tous les invités ?")) { return; }
+
+    const generateUrl = button.dataset.generateUrl;
+    let offset = 0;
+    let totalGuests = 0;
+    let filesGenerated = 0;
+    let errors = 0;
+
+    button.disabled = true;
+    progressBox.classList.remove("d-none", "alert-success", "alert-danger");
+    progressBox.classList.add("alert-info");
+    updateProgress(0, 0, 0, 0);
+
+    try {
+      while (offset !== null) {
+        const response = await fetch(`${generateUrl}?offset=${offset}&limit=${batchSize}`, {
+          method: "POST",
+          headers: { "Accept": "application/json" },
+        });
+        if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
+
+        const result = await response.json();
+        totalGuests = result.total_guests;
+        filesGenerated += result.files_generated;
+        errors += result.errors;
+
+        const nextOffset = result.next_offset;
+        const processed = nextOffset === null ? totalGuests : nextOffset;
+        updateProgress(processed, totalGuests, filesGenerated, errors);
+        offset = nextOffset;
+      }
+      progressBox.classList.remove("alert-info");
+      progressBox.classList.add("alert-success");
+      summaryText.textContent = `Terminé : ${filesGenerated} fichier(s) généré(s), ${errors} erreur(s).`;
+    } catch (error) {
+      progressBox.classList.remove("alert-info");
+      progressBox.classList.add("alert-danger");
+      summaryText.textContent = `Erreur pendant la génération : ${error.message}`;
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+</script>
 {% endblock %}
