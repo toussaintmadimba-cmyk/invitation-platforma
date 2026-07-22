@@ -328,7 +328,11 @@ def invitations_generate_ui(event_id: int):
         base_public_url=current_app.config["BASE_PUBLIC_URL"],
     )
 
-    flash(f"Invitations générées ✅ ({summary['files_generated']} fichier(s))", "success")
+    flash(
+        f"Invitations générées ✅ ({summary['files_generated']} fichier(s), "
+        f"{summary.get('errors', 0)} erreur(s))",
+        "success",
+    )
     return redirect(url_for("client.invitations_list", event_id=event.id))
 
 
