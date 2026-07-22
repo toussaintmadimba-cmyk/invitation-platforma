@@ -27,6 +27,7 @@ class RenderResult:
 class TemplateRenderer:
     def __init__(self, storage_dir: str):
         self.storage_dir = os.path.abspath(storage_dir)
+        self._image_cache = {}
 
     def render_invitation(
         self,
@@ -115,7 +116,7 @@ class TemplateRenderer:
                 raise FileNotFoundError(f"Image de fond introuvable: {background_path}")
 
             pdf.drawImage(
-                ImageReader(background_path),
+                self._get_image_reader(background_path),
                 0,
                 0,
                 width=page_w,
@@ -147,6 +148,12 @@ class TemplateRenderer:
                     element=element,
                     variables=variables,
                 )
+
+    def _get_image_reader(self, image_path: str) -> ImageReader:
+        if image_path not in self._image_cache:
+            self._image_cache[image_path] = ImageReader(image_path)
+
+        return self._image_cache[image_path]
 
     def _draw_text_element(
         self,
