@@ -45,6 +45,13 @@ def _resolve_file_path(path_in_db: str) -> str:
         return os.path.join(storage_root, path_in_db)
 
     return path_in_db
+def _is_external_file_url(value: str) -> bool:
+    value = str(value or "").strip().lower()
+
+    return (
+        value.startswith("https://")
+        or value.startswith("http://")
+    )
 
 
 def _safe_download_name(value: str) -> str:
