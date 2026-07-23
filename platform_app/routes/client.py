@@ -381,6 +381,8 @@ def invitation_download_pdf(inv_id: int):
 
     if invitation.event.user_id != current_user.id:
         abort(403)
+    if _is_external_file_url(invitation.pdf_path):
+        return redirect(invitation.pdf_path)
 
     real_path = _resolve_file_path(invitation.pdf_path)
 
@@ -410,6 +412,8 @@ def invitation_download_qr(inv_id: int):
 
     if invitation.event.user_id != current_user.id:
         abort(403)
+    if _is_external_file_url(invitation.qr_path):
+        return redirect(invitation.qr_path)
 
     real_path = _resolve_file_path(invitation.qr_path)
 
