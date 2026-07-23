@@ -6,6 +6,10 @@ from flask import current_app
 from .. import db
 from ..models import Guest, Invitation
 from .template_renderer import TemplateRenderer
+from .cloud_storage import (
+    delete_local_generated_files,
+    upload_invitation_files,
+)
 
 
 def _ensure_dir(path: str) -> None:
@@ -86,6 +90,15 @@ def generate_all_invitations_for_event(
                 pdf_path=pdf_path,
                 qr_path=qr_path,
             )
+            uploaded_files = upload_invitation_files(
+                pdf_path=pdf_path,
+                qr_path=qr_path,
+                event_id=event.id,
+                guest_id=guest.id,
+            )
+            invitation.pdf_path = uploaded_files.pdf_url
+            invitation.qr_path = uploaded_files.qr_url
+            
         except Exception as exc:
             errors += 1
             current_app.logger.error(
@@ -94,10 +107,13 @@ def generate_all_invitations_for_event(
                 exc,
                 exc_info=True,
             )
+            db.session.rollback()
             continue
-
-        invitation.pdf_path = pdf_path
-        invitation.qr_path = qr_path
+        finally:
+            delete_local_generated_files(
+                pdf_path,
+                qr_path,
+            )
 
         db.session.add(invitation)
         files_generated += 1
