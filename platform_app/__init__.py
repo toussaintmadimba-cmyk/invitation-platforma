@@ -52,7 +52,11 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(client_bp)
     app.register_blueprint(public_bp)
-
+    
+    # --- CREATION DES TABLES ---
+    with app.app_context():
+        db.create_all()
+        
     # Home simple
     @app.get("/")
     def home():
