@@ -17,6 +17,7 @@ def register_get():
 
 @bp.post("/register")
 def register_post():
+    db.session.rollback()
     if current_user.is_authenticated:
         return redirect(url_for("client.dashboard"))
 
@@ -53,6 +54,7 @@ def login_get():
 
 @bp.post("/login")
 def login_post():
+    db.session.rollback()
     if current_user.is_authenticated:
         return redirect(url_for("client.dashboard"))
 
