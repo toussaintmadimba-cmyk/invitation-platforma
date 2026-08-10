@@ -49,6 +49,7 @@
         <h5 class="mb-3">Ajouter un invité</h5>
 
         <form method="post" action="{{ url_for('client.guests_create', event_id=event.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
           <div class="mb-3">
             <label class="form-label">Civilité</label>
@@ -174,6 +175,7 @@
                     <form method="post"
                           action="{{ url_for('client.guests_delete', guest_id=g.id) }}"
                           onsubmit="return confirm('Supprimer cet invité et son invitation ?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="btn btn-sm btn-outline-danger">Supprimer</button>
                     </form>
                   </td>
@@ -200,6 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const progressBar = document.getElementById("generationProgressBar");
   const summaryText = document.getElementById("generationSummary");
   const batchSize = 20;
+  const csrfToken = "{{ csrf_token() }}";
 
   if (!button) { return; }
 
@@ -231,7 +234,10 @@ document.addEventListener("DOMContentLoaded", () => {
       while (offset !== null) {
         const response = await fetch(`${generateUrl}?offset=${offset}&limit=${batchSize}`, {
           method: "POST",
-          headers: { "Accept": "application/json" },
+          headers: {
+            "Accept": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
         });
         if (!response.ok) { throw new Error(`HTTP ${response.status}`); }
 
