@@ -72,7 +72,10 @@
           <a class="nav-link text-dark fw-medium" href="{{ url_for('client.dashboard') }}">Dashboard</a>
           <a class="nav-link text-dark fw-medium" href="{{ url_for('client.events_list') }}">Événements</a>
         </div>
-        <a class="btn btn-outline-gold btn-sm px-3" href="{{ url_for('auth.logout') }}">Déconnexion</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-outline-gold btn-sm px-3" type="submit">Déconnexion</button>
+        </form>
       {% else %}
         <a class="btn btn-link text-dark text-decoration-none btn-sm" href="{{ url_for('auth.login_get') }}">Connexion</a>
         <a class="btn btn-gold btn-sm px-3" href="{{ url_for('auth.register_get') }}">Créer un compte</a>
