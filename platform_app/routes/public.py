@@ -37,12 +37,12 @@ def invitation_page(code: str):
     )
 
 
-@bp.route("/i/<string:code>/rsvp", methods=["GET", "POST"])
+@bp.post("/i/<string:code>/rsvp")
 def invitation_rsvp(code: str):
     invitation = _get_invitation_or_404(code)
 
-    status = (request.form.get("status") or request.args.get("status") or "").strip().lower()
-    message = (request.form.get("message") or request.args.get("message") or "").strip()
+    status = (request.form.get("status") or "").strip().lower()
+    message = (request.form.get("message") or "").strip()
 
     if status not in ("yes", "no"):
         flash("Merci de choisir une réponse.", "warning")
