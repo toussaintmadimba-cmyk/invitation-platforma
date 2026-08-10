@@ -71,7 +71,7 @@ def login_post():
     return redirect(url_for("client.dashboard"))
 
 
-@bp.get("/logout")
+@bp.post("/logout")
 @login_required
 def logout():
     logout_user()
