@@ -1,10 +1,12 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 # ✅ IMPORTANT: ton endpoint login s'appelle auth.login_get
 login_manager.login_view = "auth.login_get"
@@ -31,6 +33,7 @@ def create_app():
     # --- INIT EXTENSIONS ---
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     # --- USER LOADER ---
     from .models import User  # éviter circular import
@@ -52,11 +55,19 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(client_bp)
     app.register_blueprint(public_bp)
-    
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        app.logger.warning("Requête CSRF refusée : %s", error.description)
+        return render_template(
+            "errors/csrf_error.html",
+            reason=error.description,
+        ), 400
+
     # --- CREATION DES TABLES ---
     with app.app_context():
         db.create_all()
-        
+
     # Home simple
     @app.get("/")
     def home():

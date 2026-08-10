@@ -1,0 +1,20 @@
+{% extends "partials/_base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4 text-center">
+        <h3 class="mb-3">La page a expiré</h3>
+        <p class="text-muted">
+          Pour protéger ton compte, cette action a été refusée.
+          Recharge la page puis réessaie.
+        </p>
+        <a class="btn btn-dark" href="{{ request.referrer or url_for('public.home') }}">
+          Recharger et réessayer
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

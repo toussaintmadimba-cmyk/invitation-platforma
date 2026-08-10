@@ -13,6 +13,7 @@
       <div class="card-body">
         <h5 class="mb-3">Créer un événement</h5>
         <form method="post" action="{{ url_for('client.events_create') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="mb-2">
             <label class="form-label">Nom de l’événement</label>
             <input class="form-control" name="title" required>
