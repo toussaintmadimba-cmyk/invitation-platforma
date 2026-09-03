@@ -1,0 +1,60 @@
+{% extends "partials/_base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h3 class="mb-0">Clients</h3>
+    <div class="text-muted">Gestion des accès à la plateforme</div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">Email</th>
+          <th>Statut</th>
+          <th>Événements</th>
+          <th>Inscription</th>
+          <th class="text-end pe-4">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client, event_count in clients %}
+          <tr>
+            <td class="ps-4 fw-semibold">{{ client.email }}</td>
+            <td>
+              {% if client.is_active %}
+                <span class="badge text-bg-success">Actif</span>
+              {% else %}
+                <span class="badge text-bg-secondary">Suspendu</span>
+              {% endif %}
+            </td>
+            <td>{{ event_count }}</td>
+            <td>{{ client.created_at.strftime('%d/%m/%Y') if client.created_at else '-' }}</td>
+            <td class="text-end pe-4">
+              <form
+                method="post"
+                action="{{ url_for('admin.toggle_client_access', user_id=client.id) }}"
+                class="d-inline"
+                onsubmit='return confirm("{% if client.is_active %}Confirmer la suspension de ce client ?{% else %}Confirmer la réactivation de ce client ?{% endif %}");'
+              >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if client.is_active %}
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Couper l'accès</button>
+                {% else %}
+                  <button class="btn btn-sm btn-success" type="submit">Réactiver</button>
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="text-center py-5 text-muted">Aucun compte client.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
