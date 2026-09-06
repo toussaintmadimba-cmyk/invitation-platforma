@@ -15,6 +15,14 @@ def normalize_database_url(database_url: str) -> str:
 
 
 class Config:
+    MAIL_HOST = os.environ.get("MAIL_HOST", "")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
+    MAIL_FROM = os.environ.get("MAIL_FROM", "")
+    MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
+    PASSWORD_RESET_MAX_AGE = 1800
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 
     SQLALCHEMY_DATABASE_URI = normalize_database_url(

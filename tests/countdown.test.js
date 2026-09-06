@@ -1,0 +1,11 @@
+﻿const assert = require('node:assert/strict');
+const { formatCountdown } = require('../platform_app/static/js/countdown.js');
+const deadline = '2027-12-20T16:00:00';
+const end = new Date(deadline).getTime();
+assert.equal(formatCountdown(deadline, end - 90061000), '1 j · 01 h · 01 min · 01 s');
+assert.equal(formatCountdown(deadline, end), 'L’heure de votre événement est arrivée');
+assert.equal(formatCountdown(deadline, end + 1000), 'L’heure de votre événement est arrivée');
+assert.equal(formatCountdown(deadline, end - 1), '0 j · 00 h · 00 min · 01 s');
+assert.equal(formatCountdown('invalid', end), 'Date indisponible');
+assert.notEqual(formatCountdown('2028-01-01T16:00:00', end), formatCountdown(deadline, end));
+console.log('6 countdown assertions passed');

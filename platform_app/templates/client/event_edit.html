@@ -8,6 +8,16 @@
   <a class="btn btn-outline-dark" href="{{ url_for('client.events_list') }}">Retour</a>
 </div>
 
+{% if event.is_active %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="text-muted">Votre événement commence dans</div>
+    <div class="h4 mt-2" style="color: var(--gold);" data-event-countdown="{{ event.event_datetime.isoformat() }}">Compte à rebours…</div>
+    <small class="text-muted">Heure locale de votre navigateur. Enregistrez un changement de date pour actualiser le compte à rebours.</small>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/countdown.js') }}" defer></script>
+{% endif %}
 <div class="card shadow-sm">
   <div class="card-body">
     <form method="post" action="{{ url_for('client.events_edit_post', event_id=event.id) }}">
