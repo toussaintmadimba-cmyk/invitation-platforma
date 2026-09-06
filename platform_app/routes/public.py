@@ -37,6 +37,29 @@ def invitation_page(code: str):
     )
 
 
+@bp.get("/i/<string:code>/rsvp")
+def invitation_rsvp_from_pdf(code: str):
+    invitation = _get_invitation_or_404(code)
+
+    status = (request.args.get("status") or "").strip().lower()
+
+    if status not in ("yes", "no"):
+        return redirect(url_for("public.invitation_page", code=code))
+
+    rsvp = RSVP.query.filter_by(invitation_id=invitation.id).first()
+
+    if rsvp is None:
+        rsvp = RSVP(invitation_id=invitation.id)
+
+    rsvp.status = status
+    rsvp.responded_at = datetime.utcnow()
+
+    db.session.add(rsvp)
+    db.session.commit()
+
+    return redirect(url_for("public.rsvp_thanks", code=code))
+
+
 @bp.post("/i/<string:code>/rsvp")
 def invitation_rsvp(code: str):
     invitation = _get_invitation_or_404(code)

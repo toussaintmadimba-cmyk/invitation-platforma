@@ -8,10 +8,15 @@ from ..models import User
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
+def _redirect_for_user(user):
+    endpoint = "admin.clients_list" if user.role == "admin" else "client.dashboard"
+    return redirect(url_for(endpoint))
+
+
 @bp.get("/register")
 def register_get():
     if current_user.is_authenticated:
-        return redirect(url_for("client.dashboard"))
+        return _redirect_for_user(current_user)
     return render_template("auth/register.html")
 
 
@@ -19,7 +24,7 @@ def register_get():
 def register_post():
     db.session.rollback()
     if current_user.is_authenticated:
-        return redirect(url_for("client.dashboard"))
+        return _redirect_for_user(current_user)
 
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
@@ -48,7 +53,7 @@ def register_post():
 @bp.get("/login")
 def login_get():
     if current_user.is_authenticated:
-        return redirect(url_for("client.dashboard"))
+        return _redirect_for_user(current_user)
     return render_template("auth/login.html")
 
 
@@ -56,7 +61,7 @@ def login_get():
 def login_post():
     db.session.rollback()
     if current_user.is_authenticated:
-        return redirect(url_for("client.dashboard"))
+        return _redirect_for_user(current_user)
 
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
@@ -66,9 +71,12 @@ def login_post():
         flash("Email ou mot de passe incorrect.", "danger")
         return redirect(url_for("auth.login_get"))
 
-    login_user(user)
+    if not login_user(user):
+        flash("Ce compte a été désactivé...", "danger")
+        return redirect(url_for("auth.login_get"))
+
     flash("Connecté ✅", "success")
-    return redirect(url_for("client.dashboard"))
+    return _redirect_for_user(user)
 
 
 @bp.post("/logout")

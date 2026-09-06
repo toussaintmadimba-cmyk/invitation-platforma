@@ -1,8 +1,11 @@
-import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect, CSRFError
+from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
+
+from .config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -12,23 +15,40 @@ csrf = CSRFProtect()
 login_manager.login_view = "auth.login_get"
 
 
+def _user_is_active_column_exists():
+    columns = inspect(db.engine).get_columns("user")
+    return any(column["name"] == "is_active" for column in columns)
+
+
+def _ensure_user_is_active_column():
+    if _user_is_active_column_exists():
+        return
+
+    active_value = "TRUE" if db.engine.dialect.name == "postgresql" else "1"
+    try:
+        with db.engine.begin() as connection:
+            connection.execute(
+                text(
+                    f'ALTER TABLE "user" ADD COLUMN is_active '
+                    f'BOOLEAN NOT NULL DEFAULT {active_value}'
+                )
+            )
+    except SQLAlchemyError:
+        if not _user_is_active_column_exists():
+            raise
+
+    with db.engine.begin() as connection:
+        connection.execute(
+            text(
+                f'UPDATE "user" SET is_active = {active_value} '
+                'WHERE is_active IS NULL'
+            )
+        )
+
+
 def create_app():
     app = Flask(__name__)
-
-    # --- CONFIG ---
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
-
-    # DB
-    db_uri = os.environ.get("DATABASE_URL", "sqlite:///app.db")
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    # Storage
-    storage_dir = os.environ.get("STORAGE_DIR", os.path.join(os.getcwd(), "storage"))
-    app.config["STORAGE_DIR"] = storage_dir
-
-    # URL publique (QR)
-    app.config["BASE_PUBLIC_URL"] = os.environ.get("BASE_PUBLIC_URL", "http://127.0.0.1:5000")
+    app.config.from_object(Config)
 
     # --- INIT EXTENSIONS ---
     db.init_app(app)
@@ -41,7 +61,10 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id: str):
         try:
-            return db.session.get(User, int(user_id))
+            user = db.session.get(User, int(user_id))
+            if user is None or not user.is_active:
+                return None
+            return user
         except Exception:
             db.session.rollback()
             app.logger.exception("Erreur lors du chargement de l'utilisateur")
@@ -49,10 +72,12 @@ def create_app():
 
     # --- BLUEPRINTS ---
     from .routes.auth import bp as auth_bp
+    from .routes.admin import bp as admin_bp
     from .routes.client import bp as client_bp
     from .routes.public import bp as public_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(client_bp)
     app.register_blueprint(public_bp)
 
@@ -67,13 +92,6 @@ def create_app():
     # --- CREATION DES TABLES ---
     with app.app_context():
         db.create_all()
-
-    # Home simple
-    @app.get("/")
-    def home():
-        return (
-            "<h3>OK - Plateforme Invitations</h3>"
-            "<p><a href='/auth/login'>Login</a> | <a href='/auth/register'>Register</a></p>"
-        )
+        _ensure_user_is_active_column()
 
     return app

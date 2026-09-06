@@ -1,6 +1,9 @@
 import sqlite3
 
-DB_PATH = "app.db"  # ⚠️ adapte selon ton config.py si nécessaire
+from platform_app.config import DEFAULT_SQLITE_DB_PATH
+
+
+DB_PATH = DEFAULT_SQLITE_DB_PATH
 
 def col_exists(cur, table, col):
     cur.execute(f"PRAGMA table_info({table})")
