@@ -57,7 +57,13 @@
         {% for e in events %}
         <tr class="border-transparent">
           <td class="ps-4 fw-semibold">{{ e.title }}</td>
-          <td>{{ e.event_datetime.strftime('%d %b %Y') }}</td>
+          <td>
+            {{ e.event_datetime.strftime('%d/%m/%Y à %H:%M') }}
+            {% if e.is_active %}
+            <div class="fw-semibold mt-1" style="color: var(--gold);" data-event-countdown="{{ e.event_datetime.isoformat() }}">Compte à rebours…</div>
+            <small class="text-muted">Heure locale de votre navigateur</small>
+            {% endif %}
+          </td>
           <td>
             {% if e.is_active %}
               <span class="badge rounded-pill bg-success-subtle text-success px-3">Actif</span>
@@ -81,4 +87,5 @@
     </table>
   </div>
 </div>
+<script src="{{ url_for('static', filename='js/countdown.js') }}" defer></script>
 {% endblock %}
