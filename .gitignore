@@ -3,3 +3,14 @@
 __pycache__/
 *.pyc
 .vscode/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+backups/
+backups_db_obsoletes/
+storage/pdf/
+storage/qr/
+storage/tmp/
+.env.*
+!.env.example

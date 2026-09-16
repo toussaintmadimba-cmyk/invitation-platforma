@@ -5,7 +5,7 @@ from flask_wtf.csrf import CSRFProtect, CSRFError
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from .config import Config
+from .config import Config, validate_production_config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -49,6 +49,7 @@ def _ensure_user_is_active_column():
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    validate_production_config(app.config)
 
     # --- INIT EXTENSIONS ---
     db.init_app(app)
@@ -93,5 +94,21 @@ def create_app():
     with app.app_context():
         db.create_all()
         _ensure_user_is_active_column()
+        schema = inspect(db.engine)
+        unique_definitions = schema.get_unique_constraints("invitation") + schema.get_indexes("invitation")
+        has_unique_guest = any(
+            item.get("column_names") == ["guest_id"] and item.get("unique", True)
+            for item in unique_definitions
+        )
+        checks = {item["name"] for item in schema.get_check_constraints("guest")}
+        has_group_check = "ck_guest_type_size" in checks
+        if not has_group_check and db.engine.dialect.name == "sqlite":
+            with db.engine.connect() as connection:
+                triggers = set(connection.execute(text(
+                    "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='guest'"
+                )).scalars())
+            has_group_check = {"guest_size_insert", "guest_size_update"}.issubset(triggers)
+        if not has_unique_guest or not has_group_check:
+            raise RuntimeError("Schéma à mettre à jour : sauvegardez, puis exécutez python maintenance.py migrate --apply.")
 
     return app

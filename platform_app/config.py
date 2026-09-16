@@ -15,6 +15,7 @@ def normalize_database_url(database_url: str) -> str:
 
 
 class Config:
+    APP_ENV = os.environ.get("APP_ENV", os.environ.get("FLASK_ENV", "development"))
     MAIL_HOST = os.environ.get("MAIL_HOST", "")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
@@ -40,3 +41,16 @@ class Config:
         "BASE_PUBLIC_URL",
         "http://127.0.0.1:5000"
     )
+
+
+def validate_production_config(config):
+    if config.get("APP_ENV") != "production":
+        return
+    from urllib.parse import urlparse
+    if config.get("SECRET_KEY") in {None, "", "dev-secret-key-change-me", "change-moi-en-production"}:
+        raise RuntimeError("SECRET_KEY privée obligatoire en production.")
+    if config.get("SQLALCHEMY_DATABASE_URI") == DEFAULT_SQLITE_DATABASE_URL:
+        raise RuntimeError("DATABASE_URL explicite obligatoire en production.")
+    url = urlparse(config.get("BASE_PUBLIC_URL", ""))
+    if url.scheme != "https" or not url.netloc or url.path not in {"", "/"}:
+        raise RuntimeError("BASE_PUBLIC_URL doit être une origine HTTPS en production.")

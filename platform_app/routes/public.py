@@ -9,6 +9,13 @@ from ..models import Invitation, RSVP
 bp = Blueprint("public", __name__)
 
 
+@bp.after_request
+def protect_invitation_pages(response):
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
 @bp.get("/")
 def home():
     return redirect(url_for("auth.login_get"))
@@ -17,6 +24,8 @@ def home():
 def _get_invitation_or_404(code: str) -> Invitation:
     invitation = Invitation.query.filter_by(invitation_code=code).first()
     if invitation is None:
+        abort(404)
+    if not invitation.event.is_active or not invitation.event.user.is_active:
         abort(404)
     return invitation
 
@@ -46,18 +55,7 @@ def invitation_rsvp_from_pdf(code: str):
     if status not in ("yes", "no"):
         return redirect(url_for("public.invitation_page", code=code))
 
-    rsvp = RSVP.query.filter_by(invitation_id=invitation.id).first()
-
-    if rsvp is None:
-        rsvp = RSVP(invitation_id=invitation.id)
-
-    rsvp.status = status
-    rsvp.responded_at = datetime.utcnow()
-
-    db.session.add(rsvp)
-    db.session.commit()
-
-    return redirect(url_for("public.rsvp_thanks", code=code))
+    return render_template("public/rsvp_confirm.html", inv=invitation, status=status)
 
 
 @bp.post("/i/<string:code>/rsvp")

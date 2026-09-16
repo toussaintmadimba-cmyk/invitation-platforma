@@ -17,7 +17,7 @@
   <div class="col-md-4">
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="text-muted small">Confirmés</div>
+        <div class="text-muted small">Invitations acceptées</div>
         <div class="h3 text-success mb-0">{{ rsvp_stats.yes }}</div>
       </div>
     </div>
@@ -26,7 +26,7 @@
   <div class="col-md-4">
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="text-muted small">Refus</div>
+        <div class="text-muted small">Invitations refusées</div>
         <div class="h3 text-danger mb-0">{{ rsvp_stats.no }}</div>
       </div>
     </div>
@@ -35,13 +35,14 @@
   <div class="col-md-4">
     <div class="card shadow-sm">
       <div class="card-body">
-        <div class="text-muted small">En attente</div>
+        <div class="text-muted small">Invitations sans réponse</div>
         <div class="h3 text-secondary mb-0">{{ rsvp_stats.pending }}</div>
       </div>
     </div>
   </div>
 </div>
 
+<p class="text-muted">{{ total_people }} personne(s) invitée(s) · {{ guests|length }} groupe(s) · {{ invitations_count }} invitation(s) créée(s). Les réponses ci-dessus concernent les invitations, pas les entrées.</p>
 <div class="row g-3">
   <div class="col-lg-5">
     <div class="card shadow-sm">
@@ -78,7 +79,7 @@
 
             <div class="col-md-6">
               <label class="form-label">Taille du groupe</label>
-              <input class="form-control" name="party_size" placeholder="Auto si single">
+              <input class="form-control" type="number" min="1" max="100" step="1" name="party_size" placeholder="1 seule, 2 couple, 3 famille">
             </div>
           </div>
 
@@ -252,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
         offset = nextOffset;
       }
       progressBox.classList.remove("alert-info");
-      progressBox.classList.add("alert-success");
+      progressBox.classList.add(errors ? "alert-danger" : "alert-success");
       summaryText.textContent = `Terminé : ${filesGenerated} fichier(s) généré(s), ${errors} erreur(s).`;
     } catch (error) {
       progressBox.classList.remove("alert-info");

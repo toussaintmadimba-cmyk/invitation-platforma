@@ -1,4 +1,5 @@
 import os
+import uuid
 from dataclasses import dataclass
 from typing import Optional
 
@@ -10,6 +11,13 @@ import cloudinary.uploader
 class UploadedInvitationFiles:
     pdf_url: str
     qr_url: str
+    pdf_public_id: Optional[str] = None
+    qr_public_id: Optional[str] = None
+
+
+def delete_uploaded_invitation_files(files: UploadedInvitationFiles) -> None:
+    _destroy_uploaded_file(files.pdf_public_id, resource_type="raw")
+    _destroy_uploaded_file(files.qr_public_id, resource_type="image")
 
 
 def _validate_cloudinary_config() -> None:
@@ -95,8 +103,10 @@ def upload_invitation_files(
 
     folder = f"invitation-platforma/events/event_{event_id}"
 
-    pdf_public_id = f"{folder}/pdf/invite_{guest_id}.pdf"
-    qr_public_id = f"{folder}/qr/invite_{guest_id}"
+    # New immutable pair: a failed upload cannot damage the previous revision.
+    revision = uuid.uuid4().hex
+    pdf_public_id = f"{folder}/pdf/invite_{guest_id}_{revision}.pdf"
+    qr_public_id = f"{folder}/qr/invite_{guest_id}_{revision}"
 
     uploaded_pdf_public_id: Optional[str] = None
     uploaded_qr_public_id: Optional[str] = None
@@ -106,7 +116,7 @@ def upload_invitation_files(
             pdf_path,
             resource_type="raw",
             public_id=pdf_public_id,
-            overwrite=True,
+            overwrite=False,
             invalidate=True,
         )
 
@@ -117,7 +127,7 @@ def upload_invitation_files(
             resource_type="image",
             public_id=qr_public_id,
             format="png",
-            overwrite=True,
+            overwrite=False,
             invalidate=True,
         )
 
@@ -134,6 +144,8 @@ def upload_invitation_files(
         return UploadedInvitationFiles(
             pdf_url=pdf_url,
             qr_url=qr_url,
+            pdf_public_id=uploaded_pdf_public_id,
+            qr_public_id=uploaded_qr_public_id,
         )
 
     except Exception:

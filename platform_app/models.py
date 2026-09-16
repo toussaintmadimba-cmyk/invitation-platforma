@@ -39,6 +39,13 @@ class Event(db.Model):
     invitations = db.relationship("Invitation", backref="event", lazy=True, cascade="all, delete-orphan")
 
 class Guest(db.Model):
+    __table_args__ = (
+        db.CheckConstraint("party_size BETWEEN 1 AND 100", name="ck_guest_party_size"),
+        db.CheckConstraint("(guest_type = 'single' AND party_size = 1) OR "
+                           "(guest_type = 'couple' AND party_size = 2) OR "
+                           "(guest_type = 'family' AND party_size BETWEEN 2 AND 100)",
+                           name="ck_guest_type_size"),
+    )
     id = db.Column(db.Integer, primary_key=True)
 
     event_id = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
@@ -67,6 +74,7 @@ class Guest(db.Model):
     invitation = db.relationship("Invitation", backref="guest", uselist=False)
 
 class Invitation(db.Model):
+    __table_args__ = (db.UniqueConstraint("guest_id", name="uq_invitation_guest"),)
     id = db.Column(db.Integer, primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False)
     guest_id = db.Column(db.Integer, db.ForeignKey("guest.id"), nullable=False)

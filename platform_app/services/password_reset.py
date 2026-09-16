@@ -39,10 +39,35 @@ def get_reset_user(token):
     return None
 
 
-def send_reset_email(user):
-    config = current_app.config
+def validate_mail_config(config):
     if not config["MAIL_HOST"] or not config["MAIL_FROM"]:
         raise RuntimeError("Email configuration missing")
+    if config["MAIL_USE_TLS"] == config["MAIL_USE_SSL"]:
+        raise RuntimeError("Choose exactly one encrypted SMTP transport: TLS or SSL")
+    if not 1 <= config["MAIL_PORT"] <= 65535:
+        raise RuntimeError("Invalid SMTP port")
+    if bool(config["MAIL_USERNAME"]) != bool(config["MAIL_PASSWORD"]):
+        raise RuntimeError("SMTP username and password must be provided together")
+
+
+def send_email(message, config):
+    validate_mail_config(config)
+    context = ssl.create_default_context()
+    transport = smtplib.SMTP_SSL if config["MAIL_USE_SSL"] else smtplib.SMTP
+    options = {"timeout": 15}
+    if config["MAIL_USE_SSL"]:
+        options["context"] = context
+    with transport(config["MAIL_HOST"], config["MAIL_PORT"], **options) as smtp:
+        if config["MAIL_USE_TLS"]:
+            smtp.starttls(context=context)
+        if config["MAIL_USERNAME"]:
+            smtp.login(config["MAIL_USERNAME"], config["MAIL_PASSWORD"])
+        smtp.send_message(message)
+
+
+def send_reset_email(user):
+    config = current_app.config
+    validate_mail_config(config)
     token = create_reset_token(user)
     link = config["BASE_PUBLIC_URL"].rstrip("/") + url_for("auth.reset_password", token=token)
     message = EmailMessage()
@@ -55,14 +80,4 @@ def send_reset_email(user):
         f"Ce lien est valable {minutes} minutes et ne peut être utilisé qu'une fois.\n"
         "Si vous n'avez pas demandé ce changement, ignorez cet email."
     )
-    context = ssl.create_default_context()
-    transport = smtplib.SMTP_SSL if config["MAIL_USE_SSL"] else smtplib.SMTP
-    options = {"timeout": 15}
-    if config["MAIL_USE_SSL"]:
-        options["context"] = context
-    with transport(config["MAIL_HOST"], config["MAIL_PORT"], **options) as smtp:
-        if config["MAIL_USE_TLS"] and not config["MAIL_USE_SSL"]:
-            smtp.starttls(context=context)
-        if config["MAIL_USERNAME"]:
-            smtp.login(config["MAIL_USERNAME"], config["MAIL_PASSWORD"])
-        smtp.send_message(message)
+    send_email(message, config)

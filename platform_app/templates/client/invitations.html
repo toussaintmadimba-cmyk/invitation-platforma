@@ -174,7 +174,7 @@
         }
 
         progressBox.classList.remove("alert-info");
-        progressBox.classList.add("alert-success");
+        progressBox.classList.add(errors ? "alert-danger" : "alert-success");
         summaryText.textContent = `Terminé : ${filesGenerated} fichier(s) généré(s), ${errors} erreur(s).`;
       } catch (error) {
         progressBox.classList.remove("alert-info");

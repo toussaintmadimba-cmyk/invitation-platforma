@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, send_file, jsonify
 from flask_login import login_required, current_user
+from sqlalchemy import func
 
 from .. import db
 from ..models import Event, Guest, Invitation, RSVP
@@ -71,7 +72,9 @@ def dashboard():
     events = Event.query.filter_by(user_id=current_user.id).order_by(Event.created_at.desc()).all()
 
     total_events = len(events)
-    total_guests = sum(Guest.query.filter_by(event_id=e.id).count() for e in events)
+    total_groups, total_guests = db.session.query(
+        func.count(Guest.id), func.coalesce(func.sum(Guest.party_size), 0)
+    ).join(Event).filter(Event.user_id == current_user.id).one()
     active_events = sum(1 for e in events if e.is_active)
 
     return render_template(
@@ -79,6 +82,7 @@ def dashboard():
         events=events,
         total_events=total_events,
         total_guests=total_guests,
+        total_groups=total_groups,
         active_events=active_events,
     )
 
@@ -231,6 +235,7 @@ def guests_list(event_id: int):
         guests=guests,
         invitations_count=invitations_count,
         rsvp_stats=rsvp_stats,
+        total_people=sum(g.party_size for g in guests),
     )
 
 @bp.post("/events/<int:event_id>/guests")
@@ -248,7 +253,8 @@ def guests_create(event_id: int):
 
     guest_type = (request.form.get("guest_type") or "").strip().lower()
     if guest_type not in ("single", "couple", "family"):
-        guest_type = "single"
+        flash("Choisissez un type d’invitation valide.", "danger")
+        return redirect(url_for("client.guests_list", event_id=event.id))
 
     party_size_raw = (request.form.get("party_size") or "").strip()
     table_name = (request.form.get("table_name") or "").strip()
@@ -261,17 +267,17 @@ def guests_create(event_id: int):
         return redirect(url_for("client.guests_list", event_id=event.id))
 
     try:
-        party_size = int(party_size_raw) if party_size_raw else None
+        party_size = int(party_size_raw) if party_size_raw else {"single": 1, "couple": 2, "family": 3}[guest_type]
     except ValueError:
         flash("Le nombre de personnes doit être un nombre.", "danger")
         return redirect(url_for("client.guests_list", event_id=event.id))
 
-    if guest_type == "single":
-        party_size = 1
-    elif guest_type == "couple":
-        party_size = party_size or 2
-    elif guest_type == "family":
-        party_size = party_size or 3
+    if (not 1 <= party_size <= 100
+            or (guest_type == "single" and party_size != 1)
+            or (guest_type == "couple" and party_size != 2)
+            or (guest_type == "family" and party_size < 2)):
+        flash("Prévoyez 1 personne seule, 2 pour un couple, ou 2 à 100 pour une famille.", "danger")
+        return redirect(url_for("client.guests_list", event_id=event.id))
 
     guest = Guest(
         event_id=event.id,
@@ -324,6 +330,8 @@ def invitations_generate_batch(event_id: int):
 
     event = _get_client_event_or_404(event_id)
     payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        return jsonify(error="Requête invalide."), 400
 
     try:
         offset = int(payload.get("offset", request.args.get("offset", 0)))
