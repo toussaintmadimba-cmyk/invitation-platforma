@@ -82,9 +82,9 @@ class StabilisationTests(unittest.TestCase):
             self.client.post(path, data={"full_name": "Test", "guest_type": kind})
         self.assertEqual([g.party_size for g in Guest.query.order_by(Guest.id)], [1, 2, 3])
         page = self.client.get("/client/dashboard").data.decode()
-        self.assertIn('>6</div>', page)
+        self.assertIn('6 personne(s) invitée(s)', page)
         self.assertIn('3 groupe(s)', page)
-        self.assertNotIn('Invités confirmés', page)
+        self.assertIn('Invités confirmés', page)
 
     def test_database_constraints_protect_direct_writes(self):
         event = self.event()
@@ -136,7 +136,8 @@ class StabilisationTests(unittest.TestCase):
             with patch.object(Config, "SQLALCHEMY_DATABASE_URI", url):
                 app = create_app()
             with app.app_context():
-                user = User(email="concurrency@example.test", password_hash="unused")
+                db.create_all()
+                user = User(name="Concurrency Test", email="concurrency@example.test", password_hash="unused")
                 db.session.add(user)
                 db.session.flush()
                 event = Event(user_id=user.id, title="Concurrent", event_datetime=datetime(2027, 1, 1), location_name="Room", address="Address")

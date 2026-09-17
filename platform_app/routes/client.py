@@ -75,6 +75,12 @@ def dashboard():
     total_groups, total_guests = db.session.query(
         func.count(Guest.id), func.coalesce(func.sum(Guest.party_size), 0)
     ).join(Event).filter(Event.user_id == current_user.id).one()
+    confirmed_guests = db.session.query(func.count(RSVP.id)).join(
+        Invitation, RSVP.invitation_id == Invitation.id
+    ).join(Event, Invitation.event_id == Event.id).filter(
+        Event.user_id == current_user.id,
+        RSVP.status == "yes",
+    ).scalar()
     active_events = sum(1 for e in events if e.is_active)
 
     return render_template(
@@ -83,6 +89,7 @@ def dashboard():
         total_events=total_events,
         total_guests=total_guests,
         total_groups=total_groups,
+        confirmed_guests=confirmed_guests,
         active_events=active_events,
     )
 

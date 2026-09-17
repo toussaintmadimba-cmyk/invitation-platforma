@@ -1,49 +1,18 @@
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect, CSRFError
-from sqlalchemy import inspect, text
-from sqlalchemy.exc import SQLAlchemyError
 
 from .config import Config, validate_production_config
 
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 
 # ✅ IMPORTANT: ton endpoint login s'appelle auth.login_get
 login_manager.login_view = "auth.login_get"
-
-
-def _user_is_active_column_exists():
-    columns = inspect(db.engine).get_columns("user")
-    return any(column["name"] == "is_active" for column in columns)
-
-
-def _ensure_user_is_active_column():
-    if _user_is_active_column_exists():
-        return
-
-    active_value = "TRUE" if db.engine.dialect.name == "postgresql" else "1"
-    try:
-        with db.engine.begin() as connection:
-            connection.execute(
-                text(
-                    f'ALTER TABLE "user" ADD COLUMN is_active '
-                    f'BOOLEAN NOT NULL DEFAULT {active_value}'
-                )
-            )
-    except SQLAlchemyError:
-        if not _user_is_active_column_exists():
-            raise
-
-    with db.engine.begin() as connection:
-        connection.execute(
-            text(
-                f'UPDATE "user" SET is_active = {active_value} '
-                'WHERE is_active IS NULL'
-            )
-        )
 
 
 def create_app():
@@ -53,6 +22,7 @@ def create_app():
 
     # --- INIT EXTENSIONS ---
     db.init_app(app)
+    migrate.init_app(app, db, compare_type=True)
     login_manager.init_app(app)
     csrf.init_app(app)
 
@@ -89,26 +59,5 @@ def create_app():
             "errors/csrf_error.html",
             reason=error.description,
         ), 400
-
-    # --- CREATION DES TABLES ---
-    with app.app_context():
-        db.create_all()
-        _ensure_user_is_active_column()
-        schema = inspect(db.engine)
-        unique_definitions = schema.get_unique_constraints("invitation") + schema.get_indexes("invitation")
-        has_unique_guest = any(
-            item.get("column_names") == ["guest_id"] and item.get("unique", True)
-            for item in unique_definitions
-        )
-        checks = {item["name"] for item in schema.get_check_constraints("guest")}
-        has_group_check = "ck_guest_type_size" in checks
-        if not has_group_check and db.engine.dialect.name == "sqlite":
-            with db.engine.connect() as connection:
-                triggers = set(connection.execute(text(
-                    "SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='guest'"
-                )).scalars())
-            has_group_check = {"guest_size_insert", "guest_size_update"}.issubset(triggers)
-        if not has_unique_guest or not has_group_check:
-            raise RuntimeError("Schéma à mettre à jour : sauvegardez, puis exécutez python maintenance.py migrate --apply.")
 
     return app

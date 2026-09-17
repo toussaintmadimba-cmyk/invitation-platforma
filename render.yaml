@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app --timeout 180 --workers 3
+    startCommand: flask --app wsgi:app db upgrade && gunicorn wsgi:app --timeout 180 --workers 3
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.4

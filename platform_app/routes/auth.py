@@ -79,11 +79,12 @@ def register_post():
     if current_user.is_authenticated:
         return _redirect_for_user(current_user)
 
+    name = (request.form.get("name") or "").strip()
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
 
-    if not email or not password:
-        flash("Email et mot de passe obligatoires.", "danger")
+    if not name or not email or not password:
+        flash("Nom, email et mot de passe obligatoires.", "danger")
         return redirect(url_for("auth.register_get"))
 
     existing = User.query.filter_by(email=email).first()
@@ -92,6 +93,7 @@ def register_post():
         return redirect(url_for("auth.login_get"))
 
     user = User(
+        name=name,
         email=email,
         password_hash=generate_password_hash(password),
         role="client",

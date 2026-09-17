@@ -16,7 +16,8 @@ class FeatureTests(unittest.TestCase):
         self.app.config.update(TESTING=True, WTF_CSRF_ENABLED=False, SECRET_KEY='test-only-secret')
         self.context = self.app.app_context()
         self.context.push()
-        self.user = User(email='client@example.com', password_hash=generate_password_hash('old-password'), role='client')
+        db.create_all()
+        self.user = User(name='Client Test', email='client@example.com', password_hash=generate_password_hash('old-password'), role='client')
         db.session.add(self.user)
         db.session.commit()
         self.client = self.app.test_client()
@@ -126,7 +127,7 @@ class FeatureTests(unittest.TestCase):
         self.assertNotIn(b'data-event-countdown=', self.client.get('/client/dashboard').data)
 
     def test_other_client_cannot_access_event(self):
-        other = User(email='other@example.com', password_hash=generate_password_hash('other-password'), role='client')
+        other = User(name='Other Client', email='other@example.com', password_hash=generate_password_hash('other-password'), role='client')
         db.session.add(other)
         db.session.flush()
         event = Event(user_id=other.id, title='Private', event_datetime=datetime(2027, 1, 1), location_name='Room', address='Address')
