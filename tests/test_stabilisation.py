@@ -12,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 
 import test_password_reset_countdown as features
 from platform_app import db
-from platform_app.models import Event, Guest, Invitation, RSVP
+from platform_app.models import Event, Guest, Invitation, RSVP, Template
 from platform_app.services.invitation_generator import generate_all_invitations_for_event
 from platform_app.services.cloud_storage import UploadedInvitationFiles, upload_invitation_files
 from platform_app.services.password_reset import send_email, validate_mail_config
@@ -25,7 +25,7 @@ class StabilisationTests(unittest.TestCase):
     tearDown = features.FeatureTests.tearDown
 
     def event(self):
-        event = Event(user_id=self.user.id, title="Test", event_datetime=datetime(2027, 1, 1), location_name="Salle", address="Adresse")
+        event = Event(user_id=self.user.id, template_id=self.template.id, title="Test", event_datetime=datetime(2027, 1, 1), location_name="Salle", address="Adresse")
         db.session.add(event)
         db.session.commit()
         return event
@@ -138,9 +138,10 @@ class StabilisationTests(unittest.TestCase):
             with app.app_context():
                 db.create_all()
                 user = User(name="Concurrency Test", email="concurrency@example.test", password_hash="unused")
-                db.session.add(user)
+                template = Template(slug="template_001", name="Template 001", preview_image=None, primary_color="#111111", secondary_color="#ffffff", accent_color="#c9a227", heading_font="Playfair Display", body_font="Inter", is_active=True)
+                db.session.add_all([user, template])
                 db.session.flush()
-                event = Event(user_id=user.id, title="Concurrent", event_datetime=datetime(2027, 1, 1), location_name="Room", address="Address")
+                event = Event(user_id=user.id, template_id=template.id, title="Concurrent", event_datetime=datetime(2027, 1, 1), location_name="Room", address="Address")
                 db.session.add(event)
                 db.session.flush()
                 db.session.add(Guest(event_id=event.id, full_name="One", guest_type="single", party_size=1))

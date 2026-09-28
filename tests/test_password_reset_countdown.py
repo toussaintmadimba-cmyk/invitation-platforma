@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 from platform_app import create_app, db
 from platform_app.config import Config
-from platform_app.models import User, Event, Guest, Invitation
+from platform_app.models import User, Event, Guest, Invitation, Template
 from platform_app.services.password_reset import create_reset_token, get_reset_user, send_reset_email
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -17,8 +17,15 @@ class FeatureTests(unittest.TestCase):
         self.context = self.app.app_context()
         self.context.push()
         db.create_all()
+        self.template = Template(
+            slug='template_001', name='Template 001',
+            preview_image='templates/template_001/page_1.png',
+            primary_color='#1f2937', secondary_color='#f8f5f0',
+            accent_color='#c9a227', heading_font='Playfair Display',
+            body_font='Inter', is_active=True,
+        )
         self.user = User(name='Client Test', email='client@example.com', password_hash=generate_password_hash('old-password'), role='client')
-        db.session.add(self.user)
+        db.session.add_all([self.template, self.user])
         db.session.commit()
         self.client = self.app.test_client()
 
@@ -130,7 +137,7 @@ class FeatureTests(unittest.TestCase):
         other = User(name='Other Client', email='other@example.com', password_hash=generate_password_hash('other-password'), role='client')
         db.session.add(other)
         db.session.flush()
-        event = Event(user_id=other.id, title='Private', event_datetime=datetime(2027, 1, 1), location_name='Room', address='Address')
+        event = Event(user_id=other.id, template_id=self.template.id, title='Private', event_datetime=datetime(2027, 1, 1), location_name='Room', address='Address')
         db.session.add(event)
         db.session.commit()
         self.client.post('/auth/login', data={'email': self.user.email, 'password': 'old-password'})
