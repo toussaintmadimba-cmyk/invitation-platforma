@@ -6,11 +6,12 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 
 from .. import db
-from ..models import Event, Guest, Invitation, RSVP
+from ..models import Event, Guest, Invitation, RSVP, Template
 from ..services.invitation_generator import generate_all_invitations_for_event
 
 
 bp = Blueprint("client", __name__, url_prefix="/client")
+DEFAULT_TEMPLATE_SLUG = "template_001"
 
 
 def _require_client():
@@ -23,6 +24,21 @@ def _get_client_event_or_404(event_id: int) -> Event:
     if event.user_id != current_user.id:
         abort(403)
     return event
+
+
+def _get_active_template_from_form(*, current_template=None):
+    template_id = (request.form.get("template_id") or "").strip()
+    if not template_id:
+        if current_template is not None:
+            return current_template if current_template.is_active else None
+        return Template.query.filter_by(
+            slug=DEFAULT_TEMPLATE_SLUG, is_active=True
+        ).one_or_none()
+    try:
+        template_id = int(template_id)
+    except ValueError:
+        return None
+    return Template.query.filter_by(id=template_id, is_active=True).one_or_none()
 
 
 def _resolve_file_path(path_in_db: str) -> str:
@@ -102,7 +118,8 @@ def events_list():
     _require_client()
 
     events = Event.query.filter_by(user_id=current_user.id).order_by(Event.created_at.desc()).all()
-    return render_template("client/events.html", events=events)
+    templates = Template.query.filter_by(is_active=True).order_by(Template.name).all()
+    return render_template("client/events.html", events=events, templates=templates)
 
 
 @bp.post("/events")
@@ -116,9 +133,14 @@ def events_create():
     address = (request.form.get("address") or "").strip()
 
     instructions = (request.form.get("instructions") or "").strip()
+    template = _get_active_template_from_form()
 
     if not title or not event_datetime_raw or not location_name or not address:
         flash("Titre, date/heure, lieu et adresse sont obligatoires.", "danger")
+        return redirect(url_for("client.events_list"))
+
+    if template is None:
+        flash("Choisissez un template actif valide.", "danger")
         return redirect(url_for("client.events_list"))
 
     try:
@@ -129,6 +151,7 @@ def events_create():
 
     event = Event(
         user_id=current_user.id,
+        template_id=template.id,
         title=title,
         event_datetime=event_datetime,
         location_name=location_name,
@@ -154,7 +177,10 @@ def events_edit_get(event_id: int):
     _require_client()
 
     event = _get_client_event_or_404(event_id)
-    return render_template("client/event_edit.html", event=event)
+    templates = Template.query.filter_by(is_active=True).order_by(Template.name).all()
+    return render_template(
+        "client/event_edit.html", event=event, templates=templates
+    )
 
 
 @bp.post("/events/<int:event_id>/edit")
@@ -169,9 +195,14 @@ def events_edit_post(event_id: int):
     location_name = (request.form.get("location_name") or "").strip()
     address = (request.form.get("address") or "").strip()
     instructions = (request.form.get("instructions") or "").strip()
+    template = _get_active_template_from_form(current_template=event.template)
 
     if not title or not event_datetime_raw or not location_name or not address:
         flash("Titre, date/heure, lieu et adresse sont obligatoires.", "danger")
+        return redirect(url_for("client.events_edit_get", event_id=event.id))
+
+    if template is None:
+        flash("Choisissez un template actif valide.", "danger")
         return redirect(url_for("client.events_edit_get", event_id=event.id))
 
     try:
@@ -181,6 +212,7 @@ def events_edit_post(event_id: int):
         return redirect(url_for("client.events_edit_get", event_id=event.id))
 
     event.title = title
+    event.template_id = template.id
     event.event_datetime = event_datetime
     event.location_name = location_name
     event.address = address

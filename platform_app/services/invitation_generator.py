@@ -59,7 +59,7 @@ def generate_all_invitations_for_event(
                 pdf_path = os.path.join(temp_dir, "invitation.pdf")
                 qr_path = os.path.join(temp_dir, "qr.png")
                 renderer.render_invitation(
-                    template_id="template_001", variables=variables,
+                    template_id=event.template.slug, variables=variables,
                     invitation_code=code, base_public_url=base_public_url,
                     pdf_path=pdf_path, qr_path=qr_path,
                 )

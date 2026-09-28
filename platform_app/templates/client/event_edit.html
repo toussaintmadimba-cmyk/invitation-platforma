@@ -40,6 +40,14 @@
           <label class="form-label">Adresse</label>
           <input class="form-control" name="address" value="{{ event.address }}" required>
         </div>
+        <div class="col-md-6">
+          <label class="form-label">Template</label>
+          <select class="form-select" name="template_id" required>
+            {% for template in templates %}
+              <option value="{{ template.id }}" {% if template.id == event.template_id %}selected{% endif %}>{{ template.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
 
       <hr class="my-3">

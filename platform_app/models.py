@@ -15,9 +15,27 @@ class User(UserMixin, db.Model):
     events = db.relationship("Event", backref="user", lazy=True)
 
 
+class Template(db.Model):
+    __table_args__ = (db.UniqueConstraint("slug", name="uq_template_slug"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    preview_image = db.Column(db.String(500), nullable=True)
+    primary_color = db.Column(db.String(20), nullable=False)
+    secondary_color = db.Column(db.String(20), nullable=False)
+    accent_color = db.Column(db.String(20), nullable=False)
+    heading_font = db.Column(db.String(100), nullable=False)
+    body_font = db.Column(db.String(100), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+    events = db.relationship("Event", back_populates="template", lazy=True)
+
+
 class Event(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    template_id = db.Column(db.Integer, db.ForeignKey("template.id"), nullable=False)
 
     title = db.Column(db.String(255), nullable=False)  # ex: "Mon mariage"
     event_datetime = db.Column(db.DateTime, nullable=False)
@@ -36,6 +54,7 @@ class Event(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    template = db.relationship("Template", back_populates="events")
     guests = db.relationship("Guest", backref="event", lazy=True, cascade="all, delete-orphan")
     invitations = db.relationship("Invitation", backref="event", lazy=True, cascade="all, delete-orphan")
 
